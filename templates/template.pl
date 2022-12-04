@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use Switch;
+use Data::Dumper;
 
 my $fh = undef;
 if (scalar(@ARGV) > 0){
@@ -14,4 +15,4 @@ my $answer = 0;
 while (my $line = <$fh>){
     
 }
-print("$answer\n");
+print("ANSWER: $answer\n");

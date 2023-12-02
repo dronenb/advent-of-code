@@ -4,6 +4,7 @@ use warnings;
 use Switch;
 use Data::Dumper;
 use POSIX qw/ceil/;
+use List::Util qw/max sum/;
 
 sub main {
     my $fh = undef;
@@ -13,95 +14,68 @@ sub main {
     else {
         open($fh, "<", "input.txt") or die $!;
     }
-    my $tree_arrayref = [];
+    my $tree_height_arrayref = [];
     while (my $line = <$fh>){
         chomp($line);
-        my @split = map{{'val'=>$_}} split('', $line);
-        push(@{$tree_arrayref}, \@split);
+        my @split = split('', $line);
+        push(@{$tree_height_arrayref}, \@split);
     }
-    my $rows = scalar(@{$tree_arrayref});
-    my $columns = scalar(@{$tree_arrayref->[0]});
-    print("ROWS: $rows COLUMNS: $columns\n");
+    my $row_max_index = $#{$tree_height_arrayref};
+    my $col_max_index = $#{$tree_height_arrayref->[0]};
+    my $visible_arrayref = [map {[map {0}(0..$col_max_index)]} (0..$row_max_index)];
 
-    # Transverse outer layer and marked them all visible
-    foreach my $index_pair (transverse_2d_perimeter($tree_arrayref, 0, 0, 0, 1, 0)){
-        my $row = $index_pair->[0];
-        my $column = $index_pair->[1];
-        if ($row == 0){
-            $tree_arrayref->[$row]->[$column]->{'visible_top'} = 1;
-        }
-        elsif ($row == $rows-1){
-            $tree_arrayref->[$row]->[$column]->{'visible_bottom'} = 1;
-        }
-        if ($column == 0){
-            $tree_arrayref->[$row]->[$column]->{'visible_left'} = 1;
-        }
-        elsif ($column == $columns-1){
-            $tree_arrayref->[$row]->[$column]->{'visible_right'} = 1;
-        }
-    }
+    ROW: for my $row_index (0..$row_max_index){
+        COL: for my $col_index (0..$col_max_index){
+            if (is_perimeter($row_index, $col_index, $row_max_index, $col_max_index)){
+                $visible_arrayref->[$row_index]->[$col_index] = 1;
+                next COL;
+            }
+            my $tree_height = $tree_height_arrayref->[$row_index]->[$col_index];
+            # Side to side
+            for my $test ([0..($col_index-1)],[($col_index+1)..$col_max_index]){
+                COL2: for my $col (@$test){
+                    my $test_height = $tree_height_arrayref->[$row_index]->[$col];
+                    if ($test_height < $tree_height){
+                        if ($col == (max(@$test))){
+                            $visible_arrayref->[$row_index]->[$col_index] = 1;
+                            next COL;
+                        }
+                        else {
+                            next COL2;
+                        }
+                    }
+                    else {
+                        last COL2;
+                    }
+                }
+            }
 
-    # Calculate top visibility
-    foreach my $row (1..($rows-1)){
-        foreach my $column (0..($columns-1)){
-            my @trees_above = (0..$row-1);
-            my @trees_shorter = grep{$tree_arrayref->[$row]->[$column]->{'val'} > $tree_arrayref->[$_]->[$column]->{'val'}} @trees_above;
-            # print("$row $column\n");
-            # print(Dumper(\@trees_shorter));
-            if (
-                scalar(@trees_shorter) == scalar(@trees_above)
-            ){
-                $tree_arrayref->[$row]->[$column]->{'visible_top'} = 1;
-            }
-            else {
-                $tree_arrayref->[$row]->[$column]->{'visible_top'} = 0;
-            }
-        }
-    }
-    # Calculate bottom visibility
-    foreach my $row (0..($rows-2)){
-        foreach my $column (0..($columns-1)){
-            my @trees_below = ($row..($rows-1));
-            my @trees_shorter = grep{$tree_arrayref->[$row]->[$column]->{'val'} > $tree_arrayref->[$_]->[$column]->{'val'}} @trees_below;
-
-            if (
-                scalar(@trees_shorter) == scalar(@trees_below)
-            ){
-                print("$row $column is visible from bottom\n");
-                $tree_arrayref->[$row]->[$column]->{'visible_bottom'} = 1;
-            }
-            else {
-                $tree_arrayref->[$row]->[$column]->{'visible_bottom'} = 0;
+            # Up/down
+            for my $test ([0..($row_index-1)],[($row_index+1)..$row_max_index]){
+                ROW2: for my $row (@$test){
+                    my $test_height = $tree_height_arrayref->[$row]->[$col_index];
+                    if ($test_height < $tree_height){
+                        if ($row == (max(@$test))){
+                            $visible_arrayref->[$row_index]->[$col_index] = 1;
+                            next COL;
+                        }
+                        else {
+                            next ROW2;
+                        }
+                    }
+                    else {
+                        last ROW2;
+                    }
+                }
             }
         }
     }
+    printf("%d", sum(map{sum(@$_)}(@$visible_arrayref)));
 }
 
-sub transverse_2d_perimeter {
-    my ($arrayref, $current_column, $current_row, $columns_traversed, $layer_target, $current_layer) = @_;
-    my $rows = scalar(@{$arrayref}) - 1;
-    my $columns = scalar(@{$arrayref->[0]}) - 1;
-    my $transversal_indices_arrayref;
-
-    # Return if we've already traversed the array
-    if ($columns_traversed == ($rows+1)*($columns+1) || ($layer_target && $current_layer == $layer_target)){
-        return ();
-    }
-    push(@$transversal_indices_arrayref, map {[$current_row, $_]} ($current_column..($columns-$current_column)));
-    push(@$transversal_indices_arrayref, map {[$_, $columns-$current_column]} (($current_row+1)..($rows-$current_row)));
-    push(@$transversal_indices_arrayref, map {[$rows-$current_row, $_]} reverse($current_column..($columns-$current_column-1)));
-    push(@$transversal_indices_arrayref, map {[$_, $current_column]} reverse(($current_row+1)..($rows-$current_row-1)));
-    $columns_traversed += scalar(@$transversal_indices_arrayref);
-    return (@$transversal_indices_arrayref, transverse_2d_perimeter($arrayref, $current_row+1, $current_column+1, $columns_traversed, $layer_target, $current_layer+1));
+sub is_perimeter {
+    my ($row_index, $col_index, $row_max_index, $col_max_index) = @_;
+    return ($row_index == 0 || $row_index == $row_max_index || $col_index == 0 || $col_index == $col_max_index);
 }
 
-# sub is_tree_visible {
-#     my ($tree_arrayref, $current_row, $current_column) = @_;
-#     my $visible = 0;
-#     if (){
-
-#     }
-#     $tree_arrayref->{$row}->{$column}->{'visible'} = $visible;
-#     return $tree_arrayref->{$row}->{$column}->{'visible'};
-# }
 main();

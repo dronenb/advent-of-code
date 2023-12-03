@@ -33,18 +33,11 @@ func main() {
 			check(err)
 			minColIndex := max(colStartIndex-1, 0)
 			maxColIndex := min(colEndIndex, len(row)-1)
-
-			// Symbol before/after
-			if !isNotSymbolRegex.MatchString(string(row[minColIndex])) || !isNotSymbolRegex.MatchString(string(row[maxColIndex])) {
-				// fmt.Println("Adding number:", num)
-				sum += num
-				continue NUMMATCH
-			}
 			rowAbove := max(0, rowIndex-1)
 			rowBelow := min(rowIndex+1, len(rows)-1)
 
-			// Symbol above/below/diagonal
-			for _, rowIndexIter := range []int{rowAbove, rowBelow} {
+			// Check current row, above, and below
+			for _, rowIndexIter := range []int{rowAbove, rowIndex, rowBelow} {
 				for colIndexIter := minColIndex; colIndexIter <= maxColIndex; colIndexIter++ {
 					if !isNotSymbolRegex.MatchString(string(rows[rowIndexIter][colIndexIter])) {
 						// fmt.Println("Adding number:", num)

@@ -7,20 +7,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	// "math"
 )
 
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
-}
-
-func Max(x, y int) int {
-	if x < y {
-		return y
-	}
-	return x
 }
 
 func main() {
@@ -31,7 +23,6 @@ func main() {
 	gameRegex := regexp.MustCompile(`^Game (\d+): `)
 	colorRegex := regexp.MustCompile(`^(\d+) (\w+)$`)
 	sum := 0
-	// GAME:
 	for scanner.Scan() {
 		minRed := 0
 		minGreen := 0
@@ -54,11 +45,11 @@ func main() {
 						color := match[0][2]
 						switch color {
 						case "blue":
-							minBlue = Max(num, minBlue)
+							minBlue = max(num, minBlue)
 						case "red":
-							minRed = Max(num, minRed)
+							minRed = max(num, minRed)
 						case "green":
-							minGreen = Max(num, minGreen)
+							minGreen = max(num, minGreen)
 						}
 					}
 				}

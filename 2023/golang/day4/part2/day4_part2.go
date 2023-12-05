@@ -26,8 +26,8 @@ func main() {
 	for i := range numOfCards {
 		numOfCards[i] = 1
 	}
-	for cardIndex := 0; cardIndex <= len(cards)-1 && numOfCards[cardIndex] != 0; cardIndex++ {
-		card := cardRemovalRegex.ReplaceAllString(cards[cardIndex], "")
+	for cardIndex, card := range cards {
+		card = cardRemovalRegex.ReplaceAllString(card, "")
 		splitRow := middleSplitRegex.Split(card, -1)
 		winningNumbers := spaceSplitRegex.Split(splitRow[0], -1)
 		myNumbers := spaceSplitRegex.Split(splitRow[1], -1)
